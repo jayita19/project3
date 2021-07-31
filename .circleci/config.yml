@@ -1,4 +1,72 @@
 version: 2.1
+orbs:
+  slack: circleci/slack@4.2.0
+  aws-cli: circleci/aws-cli@2.0.3
+
+commands:
+
+  slack-failure:
+    description: sending falure notifications on slack
+    steps:
+      - slack/notify:
+          event: fail
+          custom: |
+            {
+              "text": "",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "❌ *Failure* #${CIRCLE_BUILD_NUM} `${CIRCLE_PROJECT_REPONAME}` on `${CIRCLE_BRANCH}`"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Job"
+                      },
+                      "url": "${CIRCLE_BUILD_URL}"
+                    }
+                  ]
+                }
+              ]
+            }
+  slack-success:
+    description: sending succeeded notifications on slack
+    steps:
+      - slack/notify:
+          event: pass
+          custom: |
+            {
+              "text": "",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "✅ *Success* #${CIRCLE_BUILD_NUM} `${CIRCLE_PROJECT_REPONAME}` on `${CIRCLE_BRANCH}`"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Job"
+                      },
+                      "url": "${CIRCLE_BUILD_URL}"
+                    }
+                  ]
+                }
+              ]
+            }
 
 commands:
   destroy-environment:
@@ -49,6 +117,8 @@ jobs:
       - save_cache:
           paths: [frontend/node_modules]
           key: frontend-build
+      - slack-failure
+      - slack-success          
 
   build-backend:
     docker:
@@ -66,6 +136,8 @@ jobs:
       - save_cache:
           paths: [backend/node_modules]
           key: backend-build
+      - slack-failure
+      - slack-success          
 
   test-frontend:
     docker:
@@ -80,6 +152,8 @@ jobs:
             cd frontend
             npm install
             npm run test
+      - slack-failure
+      - slack-success            
                 
   test-backend:
     docker:
@@ -94,6 +168,9 @@ jobs:
             cd backend
             npm install
             npm test
+      - slack-failure
+      - slack-success
+      
   scan-frontend:
     docker:
       - image: circleci/node:13.8.0
@@ -107,6 +184,8 @@ jobs:
             cd frontend
             npm install 
             npm audit fix --audit-level=critical  --force
+      - slack-failure
+      - slack-success            
 
   scan-backend:
     docker:
@@ -121,6 +200,8 @@ jobs:
             cd backend
             npm install 
             npm audit fix --audit-level=critical  --force
+      - slack-failure
+      - slack-success            
 
 #  deploy-infrastructure:
 #    docker:
