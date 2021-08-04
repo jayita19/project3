@@ -1,0 +1,49 @@
+Run4fun10*
+
+udacity2
+
+ 
+
+account id: 306160800599
+
+xoxb-2332085242356-2339290969332-4SfutFzbk4Ve9WoUnwAfdtlj
+
+Oauth token 
+
+https://join.slack.com/t/abc-piv4062/shared_invite/zt-tzd49cv4-pNhHxZBwwIxLpfKe95Nd4g -- slack url 
+
+
+
+Endpoint
+project4.ciwxntmpjsnq.us-west-2.rds.amazonaws.com
+
+
+ ssh : f8:c9:b0:b2:30:ed:73:81:a7:f5:18:75:ec:63:7b:19
+ 
+ 
+new user : admin 
+secret access key: QYnVwr0/yk7QcJMFfrO0++hFD+WAEWT5cxd1ZTv+
+access key id : AKIAUOSE3CNLQOUR6T6Y
+
+
+RDS instance : project4
+master username: postgres
+pwd: postgres
+
+
+
+db name : project3
+
+image copyt: https://cloud-images.ubuntu.com/
+
+put
+
+curl -H "Content-Type: text/plain" -H "token: 75a942ed-f1df-4c6b-8c91-3fd221042720" --request PUT --data "1" https://api.memstash.io/values/migration
+
+get 
+
+curl -H "token: 75a942ed-f1df-4c6b-8c91-3fd221042720" --request GET https://api.memstash.io/values/migration
+
+
+circleci 
+backend 
