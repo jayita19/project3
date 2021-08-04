@@ -72,33 +72,37 @@ commands:
   destroy-environment:
     description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
     parameters:
-      # Add parameter here   
+      workflow_id:
+        type: "string" 
     steps:
       - run:
           name: Destroy environments
           when: on_fail
           command: |
-            # Your code here
-            exit 1
+            aws s3 rm s3://udapeople-<<parameters.workflow_id>> --recursive
+            aws s3 rb s3://udapeople-<<parameters.workflow_id>> --force
+            aws cloudformation delete-stack --stack-name front-end-<<parameters.workflow_id>>
+            aws cloudformation delete-stack --stack-name back-end-<<parameters.workflow_id>>
+           
  
   revert-migrations:
-    description: Revert the last migration if successfully run in the current workflow.
-    parameters:
-      # Add parameter here     
+    description: Revert the last migration if successfully run in the current workflow.     
     steps:
       - run:
           name: Revert migrations
-          # Add when this will run
-          command: |
-            # Curl command here to see if there was a successful migration associated with the workflow id, store result in SUCCESS variable
-            SUCCESS = 1
-            if(( $SUCCESS==1 )); 
+          when: on_fail
+          command: |            
+            export migration_status=`(curl -H "token: 75a942ed-f1df-4c6b-8c91-3fd221042720" --request GET https://api.memstash.io/values/migration)`
+            if [ $migration_status -eq 1 ]; 
             then
-            #  cd ~/project/backend
-            #  npm install
-            #  Add revert code here. You can find this in the Getting Started section.
-              exit 1
+              echo "starting migration"
+              cd backend
+              npm install
+              npm run migrations:revert
+            else
+              echo " No Migration value found at memstash"
             fi
+
             
 jobs:
   build-frontend:
@@ -182,8 +186,7 @@ jobs:
           name: front-end scan
           command: |
             cd frontend
-            npm install 
-            #npm audit --audit-level=critical
+            npm install             
             npm audit fix --audit-level=critical  --force
       - slack-failure
       - slack-success            
@@ -316,9 +319,7 @@ jobs:
             ls -la
       - run:
           name: add value in the backend/.env file
-          command: |
-            #touch backend/.env
-            #echo NODE_ENV=production >> "backend/.env"
+          command: |            
             echo ENVIRONMENT=production >> "backend/.env"
             echo TYPEORM_CONNECTION=postgres >> "backend/.env"
             echo TYPEORM_MIGRATIONS_DIR=./src/migrations >> "backend/.env"
@@ -350,18 +351,17 @@ jobs:
       - run:
           name: Send migration results to memstash
           command: |
-            cd backend
-            #grep  "has been executed successfully" Ram_migrations.txt
+            cd backend              
             if grep -q "has been executed successfully" Ram_migrations.txt;
             #if [ $? -eq 0 ]
               then
                 echo "Migration is Succesfullly Completed"
                 echo "Placing 1 to migration_${CIRCLE_WORKFLOW_ID:0:7}"
-                curl -H "Content-Type: text/plain" -H "token: 8255788f-c262-4010-9e6e-d9e6a5748390" --request PUT --data "1" https://api.memstash.io/values/Project_3_Migration
+                curl -H "Content-Type: text/plain" -H "token: 75a942ed-f1df-4c6b-8c91-3fd221042720" --request PUT --data "1" https://api.memstash.io/values/migration
               else
                 echo "Migration is Failed Try again"
                 echo "Placing 0 to migration_${CIRCLE_WORKFLOW_ID:0:7}"
-                curl -H "Content-Type: text/plain" -H "token: 8255788f-c262-4010-9e6e-d9e6a5748390" --request PUT --data "0" https://api.memstash.io/values/Project_3_Migration
+                curl -H "Content-Type: text/plain" -H "token: 75a942ed-f1df-4c6b-8c91-3fd221042720" --request PUT --data "0" https://api.memstash.io/values/migration
             fi
             #exit 1 # to check the rollback
       - save_cache:
@@ -394,12 +394,9 @@ jobs:
       - run:
           name: Get backend url
           command: |
-            BACKEND_IP=$(aws ec2 describe-instances --region us-east-1 --query "Reservations[*].Instances[*].PublicIpAddress"  --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" --no-paginate --output text)
-            #BACKEND_DNS=$(aws ec2 describe-instances --region us-east-1 --query "Reservations[*].Instances[*].PublicDnsName"  --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" --no-paginate --output text)
-            #BACKEND_IP=`cat ~/project/.circleci/ansible/inventory.txt|tail -1`
+            BACKEND_IP=$(aws ec2 describe-instances --region us-west-2 --query "Reservations[*].Instances[*].PublicIpAddress"  --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" --no-paginate --output text)            
             echo ${BACKEND_IP}
-            echo NODE_ENV=production >> "frontend/.env"
-            #echo ENVIRONMENT=production >> "frontend/.env"
+            echo NODE_ENV=production >> "frontend/.env"            
             echo API_URL="http://${BACKEND_IP}:3030" >> "frontend/.env"  # to send beckedn url to frontend env
             export API_URL="http://${BACKEND_IP}:3030"
             echo "${API_URL}"
@@ -503,8 +500,7 @@ jobs:
       - run:
           name: Get backend url for back end smoke test
           command: |
-            BACKEND_IP=`(aws ec2 describe-instances --region us-east-1 --query "Reservations[*].Instances[*].PublicIpAddress"  --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" --no-paginate --output text)`
-            #BACKEND_IP=`cat ~/project/.circleci/ansible/inventory.txt|tail -1`
+            BACKEND_IP=`(aws ec2 describe-instances --region us-west-2 --query "Reservations[*].Instances[*].PublicIpAddress"  --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" --no-paginate --output text)`
             export API_URL="http://${BACKEND_IP}:3030"
             echo "${API_URL}"
       - run:
@@ -515,14 +511,12 @@ jobs:
       - run:
           name: Frontend smoke test.
           command: |
-            # your code here
-            URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-east-1.amazonaws.com"
-            echo Frontend_URL: ${URL}
-            #if curl -s ${URL} | grep "Welcome"; then  echo "frontend smoke test passed"; else  echo "frontend smoke test failed"; fi
+            exit 1 
+            URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-west-2.amazonaws.com"
+            echo Frontend_URL: ${URL}            
             if curl -s ${URL} | grep "Welcome"
             then
-              return 0
-              exit 1 # to get failed teh smoke test to take the screenshot 
+              return 0                          
             else
               return 1
             fi
@@ -563,28 +557,26 @@ jobs:
             aws cloudformation deploy \
               --stack-name udapeople-cloudfront \
               --template-file .circleci/files/cloudfront.yml \
-              --region us-east-1 \
+              --region us-west-2 \
               --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID:0:7}" \
               --tags project=Udapeople
               
       - revert-migrations
       - destroy-environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}    
-      # Here's where you will add some code to rollback on failure  
+      
 #
   cleanup:
     docker:
       - image: amazon/aws-cli
-    steps:
-      # Checkout code from git
+    steps:      
       - run:
           name: Get old stack workflow id and delete the old s3 bucket and stacks 
           command: |
             export OldWorkflowID=$(curl -H "token: 8255788f-c262-4010-9e6e-d9e6a5748390" --request GET https://api.memstash.io/values/workflow_ID)
             echo "Privious_workflow_id is ${OldWorkflowID}"
             export STACKS=$(aws cloudformation list-stacks --query "StackSummaries[*].StackName" --stack-status-filter CREATE_COMPLETE --output text)
-            echo " All Stacks are ${STACKS}"
-            # deleting the old s3 bucket and stacks
+            echo " All Stacks are ${STACKS}"            
             if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
             then
               echo "starting operations for OldWorkflowID=${OldWorkflowID}"
