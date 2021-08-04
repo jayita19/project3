@@ -1,0 +1,39 @@
+---
+    
+- name: "install node 12.X"
+  shell: |
+    curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+    sudo apt -y upgrade
+    sudo apt install -y nodejs
+
+- name: "install pm2"
+  become: yes
+  npm:
+    name: pm2
+    global: yes
+    production: yes
+    state: present
+
+
+- name: Unarchive backend files
+  unarchive:
+    src: /root/project/backend.tar.gz
+    dest: /home/ubuntu/
+ 
+- name: "install  npm "
+  become: true
+  command: |
+    npm install
+  args:
+    chdir: /home/ubuntu/backend
+    
+
+- name: "NPM Run Build"
+  command: npm run build
+  args: 
+    chdir: /home/ubuntu/backend
+    
+- name: start pm2
+  command: pm2 start npm --name backend -- start
+  args: 
+    chdir: /home/ubuntu/backend

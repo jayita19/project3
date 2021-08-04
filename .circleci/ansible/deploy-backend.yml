@@ -8,5 +8,22 @@
     - ansible_python_interpreter: /usr/bin/python3
     - ansible_host_key_checking: false
     - ansible_stdout_callback: yaml
+    
+  environment:
+    #NODE_ENV: production
+    ENVIRONMENT: production
+    TYPEORM_CONNECTION: postgres
+    TYPEORM_MIGRATIONS_DIR: ./src/migrations
+    TYPEORM_ENTITIES: ./src/modules/domain/**/*.entity.ts
+    TYPEORM_MIGRATIONS: ./src/migrations/*.ts
+    TYPEORM_HOST: project3.ciwxntmpjsnq.us-west-2.rds.amazonaws.com
+    TYPEORM_PORT: 5432
+    TYPEORM_USERNAME: postgres
+    TYPEORM_PASSWORD: postgres
+    TYPEORM_DATABASE: project3
+    API_URL: "{{ lookup('env','API_URL') }}"
+    
   roles:
     - deploy
+    - configure-prometheus-node-exporter
+
