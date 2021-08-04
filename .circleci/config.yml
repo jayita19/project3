@@ -341,11 +341,11 @@ jobs:
             echo " THIS IS .env CONTENTS:"
             cat .env
             #npm run migrations:revert
-            echo "starting Migration" > Jayita_migrations.txt
-            npm run migrations >> Jayita_migrations.txt
-            echo " =========================================="
-            echo "THIS IS migrations.txt CONTENTS:"
-            cat Jayita_migrations.txt
+            #echo "starting Migration" > Jayita_migrations.txt
+            #npm run migrations >> Jayita_migrations.txt
+            #echo " =========================================="
+            #echo "THIS IS migrations.txt CONTENTS:"
+            #cat Jayita_migrations.txt
             
           no_output_timeout: 30m
       - run:
