@@ -340,7 +340,7 @@ jobs:
             pwd
             echo " THIS IS .env CONTENTS:"
             cat .env
-            #npm run migrations:revert
+            npm run migrations:revert
             echo "starting Migration" > Jayita_migrations.txt
             npm run migrations >> Jayita_migrations.txt
             echo " =========================================="
@@ -511,7 +511,7 @@ jobs:
       - run:
           name: Frontend smoke test.
           command: |
-            exit 1 
+            #exit 1 
             URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-west-2.amazonaws.com"
             echo Frontend_URL: ${URL}            
             if curl -s ${URL} | grep "Welcome"
